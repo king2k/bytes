@@ -2,10 +2,16 @@ package bytes
 
 import (
 	"io"
-	"syscall"
+	//	"syscall"
+	"strconv"
 )
 
 // ---------------------------------------------------
+type Errno uintptr
+
+func (e Errno) Error() string {
+	return "errno " + strconv.Itoa(int(e))
+}
 
 type Reader struct {
 	b   []byte
@@ -40,11 +46,11 @@ func (r *Reader) Seek(offset int64, whence int) (ret int64, err error) {
 	case 2:
 		offset += int64(len(r.b))
 	default:
-		err = syscall.EINVAL
+		err = Errno(0x16) //syscall.EINVAL
 		return
 	}
 	if offset < 0 {
-		err = syscall.EINVAL
+		err = Errno(0x16) //syscall.EINVAL
 		return
 	}
 	if offset >= int64(len(r.b)) {
@@ -133,7 +139,7 @@ func (p *Buffer) WriteAt(buf []byte, off int64) (n int, err error) {
 			p.b = append(p.b, buf...)
 			return len(buf), nil
 		}
-		zero := make([]byte, iend - len(p.b))
+		zero := make([]byte, iend-len(p.b))
 		p.b = append(p.b, zero...)
 	}
 	copy(p.b[ioff:], buf)
@@ -148,7 +154,7 @@ func (p *Buffer) WriteStringAt(buf string, off int64) (n int, err error) {
 			p.b = append(p.b, buf...)
 			return len(buf), nil
 		}
-		zero := make([]byte, iend - len(p.b))
+		zero := make([]byte, iend-len(p.b))
 		p.b = append(p.b, zero...)
 	}
 	copy(p.b[ioff:], buf)
@@ -158,7 +164,7 @@ func (p *Buffer) WriteStringAt(buf string, off int64) (n int, err error) {
 func (p *Buffer) Truncate(fsize int64) (err error) {
 	size := int(fsize)
 	if len(p.b) < size {
-		zero := make([]byte, size - len(p.b))
+		zero := make([]byte, size-len(p.b))
 		p.b = append(p.b, zero...)
 	} else {
 		p.b = p.b[:size]
@@ -175,4 +181,3 @@ func (p *Buffer) Len() int {
 }
 
 // ---------------------------------------------------
-
